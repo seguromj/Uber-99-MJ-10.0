@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -125,10 +126,20 @@
             padding: 8px;
             border-bottom: 1px solid #222;
             font-family: monospace;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             display: grid;
-            grid-template-columns: 1fr auto;
+            grid-template-columns: 1fr auto auto;
+            align-items: center;
             color: #00ff88;
+            gap: 10px;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 5px;
         }
 
         .modal {
@@ -137,7 +148,7 @@
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             background: #1a1a1a;
-            padding: 35px 20px 20px 20px; /* Aumentado padding superior */
+            padding: 40px 20px 20px 20px; 
             border-radius: 15px;
             border: 2px solid #444;
             z-index: 1000;
@@ -157,14 +168,21 @@
 
         .close-modal {
             position: absolute;
-            top: 5px;
-            right: 10px; /* Mudado para a direita para não tampar o título */
+            top: 10px;
+            right: 15px;
             color: #ff4444;
             font-weight: bold;
-            font-size: 1.8rem;
+            font-size: 1.2rem; /* Tamanho reduzido */
             cursor: pointer;
-            border: none;
+            border: 1px solid #ff4444; /* Borda para parecer um botão certo */
             background: none;
+            border-radius: 5px;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
         }
     </style>
 </head>
@@ -245,6 +263,7 @@
             const savedHistory = localStorage.getItem('gameHistory');
             if (savedHistory) {
                 historyList.innerHTML = savedHistory;
+                attachDeleteEvents();
             }
             updateCredits();
         };
@@ -253,7 +272,7 @@
             document.getElementById('newCredits').value = "";
             document.getElementById('adminModal').style.display = 'block';
             overlay.style.display = 'block';
-            document.getElementById('newCredits').focus(); // Foca para abrir o teclado
+            setTimeout(() => document.getElementById('newCredits').focus(), 100);
         }
 
         function openHistory() {
@@ -324,6 +343,7 @@
                 <div class="history-item">
                     <div><strong>${name}</strong><br><small>${phone}</small></div>
                     <div style="text-align: right;">10.0s<br><small>${dataStr} - ${horaStr}</small></div>
+                    <button class="delete-btn" onclick="deleteHistoryItem(this)">🗑️</button>
                 </div>
             `;
             
@@ -333,6 +353,21 @@
             lockGame = false;
             closeModals();
             updateCredits();
+        }
+
+        function deleteHistoryItem(btn) {
+            if(confirm("Deseja excluir este registro?")) {
+                btn.parentElement.remove();
+                localStorage.setItem('gameHistory', historyList.innerHTML);
+            }
+        }
+
+        function attachDeleteEvents() {
+            // Garante que os botões carregados do localStorage funcionem
+            const btns = historyList.querySelectorAll('.delete-btn');
+            btns.forEach(btn => {
+                btn.onclick = function() { deleteHistoryItem(this); };
+            });
         }
 
         function closeModals() {
@@ -369,4 +404,3 @@
     </script>
 </body>
 </html>
-
