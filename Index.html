@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Desafio 10.0 Ultra - Sensibilidade Máxima</title>
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            background-color: #0a0a0a;
+            color: white;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* Botão do Admin (Cadeado) */
+        #adminBtn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: none;
+            border: none;
+            font-size: 2rem; /* Aumentado para tablet */
+            cursor: pointer;
+            z-index: 10;
+            filter: grayscale(1);
+        }
+
+        #creditDisplay {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            font-family: monospace;
+            color: #888;
+            font-size: 1.5rem; /* Aumentado para tablet */
+        }
+
+        .game-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            border-bottom: 2px solid #222;
+            position: relative;
+        }
+
+        h1 { margin: 0; font-size: 1.5rem; color: #555; text-transform: uppercase; letter-spacing: 5px; }
+        
+        #display {
+            font-size: clamp(10rem, 40vw, 25rem); /* Ajustado para telas maiores de tablet */
+            font-weight: 900;
+            font-family: 'Courier New', monospace;
+            color: #00ff88;
+            margin: -20px 0;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+        }
+
+        #btnAction {
+            width: 90%;
+            max-width: 700px; /* Aumentado para tablet */
+            padding: 50px;
+            font-size: 3rem; /* Fonte maior para fácil toque */
+            font-weight: bold;
+            border: none;
+            border-radius: 30px;
+            background-color: #fff;
+            color: #000;
+            cursor: pointer;
+            box-shadow: 0 15px 0 #ccc;
+            touch-action: manipulation;
+            z-index: 5;
+        }
+        
+        #btnAction:active { transform: translateY(8px); box-shadow: 0 7px 0 #999; }
+        #btnAction:disabled { background-color: #333 !important; color: #666 !important; box-shadow: none !important; cursor: not-allowed; }
+
+        .history-area {
+            height: 35vh; /* Um pouco maior para melhor leitura no tablet */
+            background: #111;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        h2 { font-size: 1.4rem; color: #00ff88; text-transform: uppercase; margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 10px; }
+
+        .history-item {
+            padding: 15px;
+            border-bottom: 1px solid #222;
+            font-family: monospace;
+            font-size: 1.2rem; /* Fonte maior para tablet */
+            display: grid;
+            grid-template-columns: 1fr auto;
+            color: #00ff88;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: #1a1a1a;
+            padding: 40px;
+            border-radius: 20px;
+            border: 3px solid #444;
+            z-index: 1000;
+            width: 85%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        #winnerModal {
+            position: absolute;
+            top: 60%; 
+            transform: translate(-50%, 0);
+            box-shadow: 0 0 50px rgba(0,255,136,0.3);
+        }
+
+        .modal input { width: 100%; padding: 20px; margin: 15px 0; border-radius: 12px; border: 1px solid #333; background: #000; color: #fff; font-size: 1.4rem; }
+        .modal button { background: #00ff88; color: #000; border: none; padding: 20px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 1.3rem; }
+        
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 900; }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: #00ff88;
+            font-weight: bold;
+            font-size: 2rem;
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
+    </style>
+</head>
+<body>
+
+    <button id="adminBtn" onclick="openAdmin()">🔒</button>
+    <div id="creditDisplay">TENTATIVAS: <span id="creditCount">0</span></div>
+
+    <div class="game-area">
+        <h1>META: 10.0</h1>
+        <div id="display">0.0</div>
+        
+        <div id="winnerModal" class="modal" style="border-color: #00ff88;">
+            <button class="close-modal" onclick="closeModals()">X</button>
+            <h2 style="border:none; font-size: 2.5rem; color: #00ff88;">🏆 PARABÉNS!</h2>
+            <p style="font-size: 1.2rem;">Você cravou 10.0 perfeitamente!</p>
+            <input type="text" id="userName" placeholder="Seu Nome">
+            <input type="tel" id="userPhone" placeholder="WhatsApp">
+            <button onclick="saveWin()">SALVAR VITÓRIA</button>
+        </div>
+
+        <button id="btnAction">INICIAR</button>
+    </div>
+
+    <div class="history-area">
+        <h2>GANHADORES (HONESTIDADE)</h2>
+        <div id="historyList"></div>
+    </div>
+
+    <div class="overlay" id="overlay"></div>
+
+    <div id="adminModal" class="modal">
+        <h3>CONFIGURAÇÃO</h3>
+        <input type="number" id="newCredits" placeholder="Qtd de tentativas">
+        <button onclick="saveCredits()">DEFINIR CRÉDITOS</button>
+    </div>
+
+    <script>
+        let timer = null;
+        let count = 0.0;
+        let running = false;
+        let credits = 0;
+        let lockGame = false; // Trava para o acerto
+
+        const display = document.getElementById('display');
+        const btnAction = document.getElementById('btnAction');
+        const creditCount = document.getElementById('creditCount');
+        const overlay = document.getElementById('overlay');
+
+        function openAdmin() {
+            const pass = prompt("Senha do Administrador:");
+            if (pass === "111") {
+                document.getElementById('adminModal').style.display = 'block';
+                overlay.style.display = 'block';
+            }
+        }
+
+        function saveCredits() {
+            credits = parseInt(document.getElementById('newCredits').value) || 0;
+            lockGame = false; // Resetar trava ao adicionar créditos
+            updateCredits();
+            closeModals();
+        }
+
+        function updateCredits() {
+            creditCount.innerText = credits;
+            btnAction.disabled = (credits <= 0 && !running) || lockGame;
+        }
+
+        function gameLoop() {
+            count += 0.1;
+            display.innerText = count.toFixed(1);
+            if (count >= 25.0) stopGame();
+        }
+
+        function startGame() {
+            if (credits <= 0 || lockGame) return;
+            credits--;
+            updateCredits();
+            
+            count = 0.0;
+            running = true;
+            btnAction.innerText = "PARAR!";
+            btnAction.style.backgroundColor = "#ff4444";
+            btnAction.style.color = "#fff";
+            timer = setInterval(gameLoop, 8); 
+        }
+
+        function stopGame() {
+            if (!running) return;
+            running = false;
+            clearInterval(timer);
+            btnAction.innerText = "INICIAR";
+            btnAction.style.backgroundColor = "#fff";
+            btnAction.style.color = "#000";
+            
+            if (count.toFixed(1) === "10.0") {
+                lockGame = true; // Ativa a trava
+                btnAction.disabled = true;
+                
+                // Delay de 3 segundos para aparecer o modal após o acerto
+                setTimeout(() => {
+                    document.getElementById('winnerModal').style.display = 'block';
+                }, 3000);
+            }
+            updateCredits();
+        }
+
+        function saveWin() {
+            const name = document.getElementById('userName').value || "Mestre";
+            const phone = document.getElementById('userPhone').value || "S/N";
+            const now = new Date();
+            const dataStr = now.toLocaleDateString('pt-BR');
+            const horaStr = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            item.innerHTML = `
+                <div><strong>${name}</strong><br><small>${phone}</small></div>
+                <div style="text-align: right;">10.0s<br><small>${dataStr} - ${horaStr}</small></div>
+            `;
+            document.getElementById('historyList').prepend(item);
+            
+            lockGame = false; // Libera o jogo após salvar
+            closeModals();
+            updateCredits();
+        }
+
+        function closeModals() {
+            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+            overlay.style.display = 'none';
+            // Se fechou no X e era um acerto, liberamos o botão
+            if (count.toFixed(1) === "10.0") {
+                lockGame = false;
+                updateCredits();
+            }
+        }
+
+        const handleInteraction = (e) => {
+            if (e.type === 'keydown' && e.code !== 'Space') return;
+            if (e.type === 'keydown') e.preventDefault(); 
+            
+            if (document.getElementById('winnerModal').style.display === 'block' || lockGame) return;
+
+            if (e.cancelable) e.preventDefault(); 
+            
+            if (!running) {
+                if (credits > 0) startGame();
+            } else {
+                stopGame();
+            }
+        };
+
+        btnAction.addEventListener('mousedown', handleInteraction);
+        btnAction.addEventListener('touchstart', handleInteraction, {passive: false});
+        window.addEventListener('keydown', handleInteraction);
+
+    </script>
+</body>
+</html>
