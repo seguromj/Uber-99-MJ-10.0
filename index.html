@@ -31,6 +31,19 @@
             filter: grayscale(1);
         }
 
+        /* Botão da Pasta (Histórico) */
+        #historyBtn {
+            position: absolute;
+            top: 15px;
+            left: 65px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            z-index: 10;
+            filter: grayscale(1);
+        }
+
         #creditDisplay {
             position: absolute;
             top: 15px;
@@ -40,7 +53,6 @@
             font-size: 1.1rem;
         }
         
-        /* Cor Verde nas tentativas conforme pedido */
         #creditCount { color: #00ff88; font-weight: bold; }
 
         .game-area {
@@ -54,7 +66,6 @@
             position: relative;
         }
 
-        /* Cor Azul na Meta conforme pedido */
         h1 { margin: 0; font-size: 1.2rem; color: #007bff; text-transform: uppercase; letter-spacing: 3px; }
         
         #display {
@@ -87,7 +98,6 @@
         #btnAction:active { transform: translateY(4px); box-shadow: 0 4px 0 #999; }
         #btnAction:disabled { background-color: #333 !important; color: #666 !important; box-shadow: none !important; cursor: not-allowed; }
 
-        /* Painéis Laterais Fixos (Aproveitando o espaço do tablet) */
         .side-panel {
             position: absolute;
             top: 50%;
@@ -106,13 +116,13 @@
         .price-highlight { color: #00ff88; }
         .prize-highlight { color: #ffcc00; }
 
-        .history-area {
-            height: 25vh; 
-            background: #111;
-            padding: 15px;
+        /* Estilo da área de histórico dentro do modal */
+        #historyList {
+            max-height: 300px;
             overflow-y: auto;
+            margin-top: 10px;
+            text-align: left;
         }
-        h2 { font-size: 1rem; color: #00ff88; text-transform: uppercase; margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 5px; }
 
         .history-item {
             padding: 8px;
@@ -168,6 +178,8 @@
 <body tabindex="0">
 
     <button id="adminBtn" onclick="openAdmin()">🔒</button>
+    <button id="historyBtn" onclick="openHistory()">📂</button>
+    
     <div id="creditDisplay">TENTATIVAS: <span id="creditCount">0</span></div>
 
     <div class="game-area">
@@ -200,45 +212,78 @@
             <p style="font-size: 0.7rem; color: #aaa;">2 TENTATIVAS</p>
             <hr style="border: 0; border-top: 1px solid #333; margin: 10px 0;">
             <p style="font-size: 0.8rem; color: red;">PRÊMIO:</p>
-            <p class="prize-highlight"><strong style="color: #0dd939;"R$ 5,00</strong></p>
+            <p class="prize-highlight"><strong style="color: #0dd939;">R$ 5,00</strong></p>
         </div>
     </div>
 
-    <div class="history-area">
-        <h2>GANHADORES (HONESTIDADE)</h2>
+    <div id="historyModal" class="modal">
+        <button class="close-modal" onclick="closeModals()">X</button>
+        <h2 style="color: #00ff88; border-bottom: 1px solid #333; padding-bottom: 10px;">GANHADORES</h2>
         <div id="historyList"></div>
     </div>
 
-    <div class="overlay" id="overlay"></div>
-
     <div id="adminModal" class="modal">
+        <button class="close-modal" onclick="closeModals()">X</button>
         <h3>CONFIGURAÇÃO</h3>
-        <input type="number" id="newCredits" placeholder="Qtd de tentativas">
-        <button onclick="saveCredits()">DEFINIR CRÉDITOS</button>
+        <input type="password" id="adminPass" placeholder="Senha">
+        <div id="adminControls" style="display:none;">
+            <input type="number" id="newCredits" placeholder="Qtd de tentativas">
+            <button onclick="saveCredits()">DEFINIR CRÉDITOS</button>
+        </div>
+        <button id="authBtn" onclick="checkPass()">ENTRAR</button>
     </div>
+
+    <div class="overlay" id="overlay" onclick="closeModals()"></div>
 
     <script>
         let timer = null;
         let count = 0.0;
         let running = false;
-        let credits = 0;
+        let credits = parseInt(localStorage.getItem('gameCredits')) || 0;
         let lockGame = false;
 
         const display = document.getElementById('display');
         const btnAction = document.getElementById('btnAction');
         const creditCount = document.getElementById('creditCount');
         const overlay = document.getElementById('overlay');
+        const historyList = document.getElementById('historyList');
+
+        // Carregar Histórico Salvo
+        window.onload = () => {
+            const savedHistory = localStorage.getItem('gameHistory');
+            if (savedHistory) {
+                historyList.innerHTML = savedHistory;
+            }
+            updateCredits();
+        };
 
         function openAdmin() {
-            const pass = prompt("Senha do Administrador:");
-            if (pass === "112") { //Senha: 112
-                document.getElementById('adminModal').style.display = 'block';
-                overlay.style.display = 'block';
+            document.getElementById('adminPass').value = "";
+            document.getElementById('adminControls').style.display = 'none';
+            document.getElementById('authBtn').style.display = 'block';
+            document.getElementById('adminModal').style.display = 'block';
+            overlay.style.display = 'block';
+        }
+
+        function checkPass() {
+            const pass = document.getElementById('adminPass').value;
+            if (pass === "112") {
+                document.getElementById('adminPass').style.display = 'none';
+                document.getElementById('authBtn').style.display = 'none';
+                document.getElementById('adminControls').style.display = 'block';
+            } else {
+                alert("Senha Incorreta!");
             }
+        }
+
+        function openHistory() {
+            document.getElementById('historyModal').style.display = 'block';
+            overlay.style.display = 'block';
         }
 
         function saveCredits() {
             credits = parseInt(document.getElementById('newCredits').value) || 0;
+            localStorage.setItem('gameCredits', credits);
             lockGame = false; 
             updateCredits();
             closeModals();
@@ -246,6 +291,7 @@
 
         function updateCredits() {
             creditCount.innerText = credits;
+            localStorage.setItem('gameCredits', credits);
             btnAction.disabled = (credits <= 0 && !running) || lockGame;
         }
 
@@ -294,13 +340,15 @@
             const dataStr = now.toLocaleDateString('pt-BR');
             const horaStr = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
 
-            const item = document.createElement('div');
-            item.className = 'history-item';
-            item.innerHTML = `
-                <div><strong>${name}</strong><br><small>${phone}</small></div>
-                <div style="text-align: right;">10.0s<br><small>${dataStr} - ${horaStr}</small></div>
+            const itemHTML = `
+                <div class="history-item">
+                    <div><strong>${name}</strong><br><small>${phone}</small></div>
+                    <div style="text-align: right;">10.0s<br><small>${dataStr} - ${horaStr}</small></div>
+                </div>
             `;
-            document.getElementById('historyList').prepend(item);
+            
+            historyList.insertAdjacentHTML('afterbegin', itemHTML);
+            localStorage.setItem('gameHistory', historyList.innerHTML);
             
             lockGame = false;
             closeModals();
@@ -309,6 +357,8 @@
 
         function closeModals() {
             document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+            document.getElementById('adminPass').style.display = 'block';
+            document.getElementById('authBtn').style.display = 'block';
             overlay.style.display = 'none';
             if (count.toFixed(1) === "10.0") {
                 lockGame = false;
@@ -322,9 +372,9 @@
                 e.preventDefault();
             }
 
-            if (document.getElementById('winnerModal').style.display === 'block' || 
-                document.getElementById('adminModal').style.display === 'block' || 
-                lockGame) return;
+            // Não deixar o jogo rodar se algum modal estiver aberto
+            let anyModalOpen = Array.from(document.querySelectorAll('.modal')).some(m => m.style.display === 'block');
+            if (anyModalOpen || lockGame) return;
 
             if (e.cancelable) e.preventDefault(); 
             
