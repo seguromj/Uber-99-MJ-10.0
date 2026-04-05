@@ -19,7 +19,6 @@
             user-select: none;
         }
 
-        /* Top Bar - Ajustada para Tablet */
         #adminBtn {
             position: absolute;
             top: 15px;
@@ -40,6 +39,9 @@
             color: #888;
             font-size: 1.1rem;
         }
+        
+        /* Cor Verde nas tentativas conforme pedido */
+        #creditCount { color: #00ff88; font-weight: bold; }
 
         .game-area {
             flex: 1;
@@ -52,9 +54,9 @@
             position: relative;
         }
 
-        h1 { margin: 0; font-size: 1rem; color: #555; text-transform: uppercase; letter-spacing: 3px; }
+        /* Cor Azul na Meta conforme pedido */
+        h1 { margin: 0; font-size: 1.2rem; color: #007bff; text-transform: uppercase; letter-spacing: 3px; }
         
-        /* Reduzido para metade do tamanho anterior para caber no tablet */
         #display {
             font-size: clamp(6rem, 25vw, 12rem); 
             font-weight: 900;
@@ -65,7 +67,6 @@
             font-variant-numeric: tabular-nums;
         }
 
-        /* Botão mais compacto e elegante */
         #btnAction {
             width: 80%;
             max-width: 400px; 
@@ -80,11 +81,30 @@
             box-shadow: 0 8px 0 #ccc;
             touch-action: manipulation;
             z-index: 5;
-            transition: background 0.2s;
+            outline: none;
         }
         
         #btnAction:active { transform: translateY(4px); box-shadow: 0 4px 0 #999; }
         #btnAction:disabled { background-color: #333 !important; color: #666 !important; box-shadow: none !important; cursor: not-allowed; }
+
+        /* Painéis Laterais Fixos (Aproveitando o espaço do tablet) */
+        .side-panel {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(26, 26, 26, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #333;
+            width: 150px;
+            text-align: center;
+        }
+        .left-panel { left: 20px; }
+        .right-panel { right: 20px; }
+        .side-panel h3 { font-size: 0.8rem; color: #888; margin: 0 0 5px 0; }
+        .side-panel p { font-size: 1.1rem; font-weight: bold; margin: 0; color: #fff; }
+        .price-highlight { color: #00ff88; }
+        .prize-highlight { color: #ffcc00; }
 
         .history-area {
             height: 25vh; 
@@ -104,7 +124,6 @@
             color: #00ff88;
         }
 
-        /* Modais Redimensionados */
         .modal {
             display: none;
             position: fixed;
@@ -122,8 +141,9 @@
 
         #winnerModal {
             position: absolute;
-            top: 60%; 
-            transform: translate(-50%, 0);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             box-shadow: 0 0 40px rgba(0,255,136,0.25);
         }
 
@@ -145,12 +165,21 @@
         }
     </style>
 </head>
-<body>
+<body tabindex="0">
 
     <button id="adminBtn" onclick="openAdmin()">🔒</button>
     <div id="creditDisplay">TENTATIVAS: <span id="creditCount">0</span></div>
 
     <div class="game-area">
+        <div class="side-panel left-panel">
+            <h3>AVULSO</h3>
+            <p class="price-highlight">R$ 3,00</p>
+            <p style="font-size: 0.7rem; color: #aaa;">1 TENTATIVA</p>
+            <hr style="border: 0; border-top: 1px solid #333; margin: 10px 0;">
+            <p style="font-size: 0.8rem;">PRÊMIO:</p>
+            <p class="prize-highlight">VIAGEM GRÁTIS</p>
+        </div>
+
         <h1>META: 10.0</h1>
         <div id="display">0.0</div>
         
@@ -164,6 +193,15 @@
         </div>
 
         <button id="btnAction">INICIAR</button>
+
+        <div class="side-panel right-panel">
+            <h3>COMBO</h3>
+            <p class="price-highlight">R$ 2,00</p>
+            <p style="font-size: 0.7rem; color: #aaa;">2 TENTATIVAS</p>
+            <hr style="border: 0; border-top: 1px solid #333; margin: 10px 0;">
+            <p style="font-size: 0.8rem;">PRÊMIO:</p>
+            <p class="prize-highlight">R$ 10,00</p>
+        </div>
     </div>
 
     <div class="history-area">
@@ -243,6 +281,7 @@
                 btnAction.disabled = true;
                 setTimeout(() => {
                     document.getElementById('winnerModal').style.display = 'block';
+                    overlay.style.display = 'block';
                 }, 3000);
             }
             updateCredits();
@@ -278,10 +317,14 @@
         }
 
         const handleInteraction = (e) => {
-            if (e.type === 'keydown' && e.code !== 'Space') return;
-            if (e.type === 'keydown') e.preventDefault(); 
-            
-            if (document.getElementById('winnerModal').style.display === 'block' || lockGame) return;
+            if (e.type === 'keydown') {
+                if (e.code !== 'Space' && e.keyCode !== 32) return;
+                e.preventDefault();
+            }
+
+            if (document.getElementById('winnerModal').style.display === 'block' || 
+                document.getElementById('adminModal').style.display === 'block' || 
+                lockGame) return;
 
             if (e.cancelable) e.preventDefault(); 
             
@@ -294,7 +337,7 @@
 
         btnAction.addEventListener('mousedown', handleInteraction);
         btnAction.addEventListener('touchstart', handleInteraction, {passive: false});
-        window.addEventListener('keydown', handleInteraction);
+        window.addEventListener('keydown', handleInteraction, true);
 
     </script>
 </body>
