@@ -120,6 +120,19 @@
         .price-highlight { color: #00ff88; }
         .prize-highlight { color: #ffcc00; }
 
+        /* AJUSTE PARA TELA DEITADA (LANDSCAPE) */
+        @media (orientation: landscape) {
+            .side-panel {
+                top: auto;
+                bottom: 20px;
+                transform: none;
+                width: 180px;
+            }
+            .left-panel { left: 20px; }
+            .right-panel { right: 20px; }
+            #display { font-size: 15vh; }
+        }
+
         #historyList {
             max-height: 300px;
             overflow-y: auto;
@@ -257,7 +270,6 @@
     <div class="overlay" id="overlay" onclick="closeModals()"></div>
 
     <script>
-        // Registro do Service Worker para permitir instalação como App
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js').catch(err => console.log("Erro SW:", err));
         }
