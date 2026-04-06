@@ -4,6 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="manifest.json">
+    
     <title>Desafio 10.0 Ultra - Tablet Pro</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -172,9 +177,9 @@
             right: 15px;
             color: #ff4444;
             font-weight: bold;
-            font-size: 1.2rem; /* Tamanho reduzido */
+            font-size: 1.2rem; 
             cursor: pointer;
-            border: 1px solid #ff4444; /* Borda para parecer um botão certo */
+            border: 1px solid #ff4444; 
             background: none;
             border-radius: 5px;
             width: 25px;
@@ -252,6 +257,11 @@
     <div class="overlay" id="overlay" onclick="closeModals()"></div>
 
     <script>
+        // Registro do Service Worker para permitir instalação como App
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(err => console.log("Erro SW:", err));
+        }
+
         let timer = null;
         let count = 0.0;
         let running = false;
@@ -368,7 +378,6 @@
         }
 
         function attachDeleteEvents() {
-            // Garante que os botões carregados do localStorage funcionem
             const btns = historyList.querySelectorAll('.delete-btn');
             btns.forEach(btn => {
                 btn.onclick = function() { deleteHistoryItem(this); };
