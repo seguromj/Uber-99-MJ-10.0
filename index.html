@@ -48,6 +48,19 @@
             filter: grayscale(1);
         }
 
+        /* NOVO BOTÃO CAIXA */
+        #financeBtn {
+            position: absolute;
+            top: 15px;
+            left: 115px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            z-index: 10;
+            filter: hue-rotate(180deg);
+        }
+
         #creditDisplay {
             position: absolute;
             top: 15px;
@@ -120,6 +133,17 @@
         .price-highlight { color: #00ff88; }
         .prize-highlight { color: #ffcc00; }
 
+        /* ESTILO BOTÕES TOGGLE */
+        .toggle-panel-btn {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: none;
+            background-color: #00ff88;
+            margin-bottom: 5px;
+            cursor: pointer;
+        }
+
         /* AJUSTE PARA TELA DEITADA (LANDSCAPE) */
         @media (orientation: landscape) {
             .side-panel {
@@ -133,14 +157,14 @@
             #display { font-size: 15vh; }
         }
 
-        #historyList {
+        #historyList, #financeList {
             max-height: 300px;
             overflow-y: auto;
             margin-top: 10px;
             text-align: left;
         }
 
-        .history-item {
+        .history-item, .finance-item {
             padding: 8px;
             border-bottom: 1px solid #222;
             font-family: monospace;
@@ -209,23 +233,27 @@
 
     <button id="adminBtn" onclick="openAdmin()">🔒</button>
     <button id="historyBtn" onclick="openHistory()">📂</button>
+    <button id="financeBtn" onclick="openFinance()">📂</button>
     
     <div id="creditDisplay">TENTATIVAS: <span id="creditCount">0</span></div>
 
     <div class="game-area">
         <div class="side-panel left-panel">
-            <h3>AVULSO</h3>
-            <p class="price-highlight">R$ 1,00</p>
-            <p style="font-size: 0.7rem; color: #aaa;">1 TENTATIVA</p>
-            <p style="font-size: 0.8rem; color: red;">PRÊMIO:</p>
-            <p class="prize-highlight"><strong style="color: #0dd939;">VIAGEM GRÁTIS</strong></p>
-            <p style="font-size: 0.7rem;">No Valor de até R$ 10,00</p>
-            <hr style="border: 0; border-top: 1px solid #333; margin: 10px 0;">
-            <p class="price-highlight">R$ 2,00</p>
-            <p style="font-size: 0.7rem; color: #aaa;">2 TENTATIVA</p>
-            <p style="font-size: 0.8rem; color: red;">PRÊMIO:</p>
-            <p class="prize-highlight"><strong style="color: #0dd939;">VIAGEM GRÁTIS</strong></p>
-            <p style="font-size: 0.7rem;">No Valor de até R$ 20,00</p>
+            <button class="toggle-panel-btn" onclick="togglePanel(this, 'avulsoContent')"></button>
+            <div id="avulsoContent">
+                <h3>AVULSO</h3>
+                <p class="price-highlight">R$ 1,00</p>
+                <p style="font-size: 0.7rem; color: #aaa;">1 TENTATIVA</p>
+                <p style="font-size: 0.8rem; color: red;">PRÊMIO:</p>
+                <p class="prize-highlight"><strong style="color: #0dd939;">VIAGEM GRÁTIS</strong></p>
+                <p style="font-size: 0.7rem;">No Valor de até R$ 10,00</p>
+                <hr style="border: 0; border-top: 1px solid #333; margin: 10px 0;">
+                <p class="price-highlight">R$ 2,00</p>
+                <p style="font-size: 0.7rem; color: #aaa;">2 TENTATIVA</p>
+                <p style="font-size: 0.8rem; color: red;">PRÊMIO:</p>
+                <p class="prize-highlight"><strong style="color: #0dd939;">VIAGEM GRÁTIS</strong></p>
+                <p style="font-size: 0.7rem;">No Valor de até R$ 20,00</p>
+            </div>
         </div>
 
         <h1>Tente parar no:<strong style="color: #a90dd9;"> 10.0</strong></h1>
@@ -244,15 +272,18 @@
         <button id="btnAction">INICIAR</button>
 
         <div class="side-panel right-panel">
-            <h3>COMBO</h3>
-            <p class="price-highlight">R$ 1,00</p>
-            <p style="font-size: 0.7rem; color: #aaa;">1 TENTATIVAS</p>
-            <hr style="border: 0; border-top: 1px solid #333; margin: 10px 0;">
-            <p class="price-highlight">R$ 3,00</p>
-            <p style="font-size: 0.7rem; color: #aaa;">4 TENTATIVAS</p>
-            <hr style="border: 0; border-top: 1px solid #333; margin: 10px 0;">
-            <p style="font-size: 0.8rem; color: red;">PRÊMIO:</p>
-            <p class="prize-highlight"><strong style="color: #0dd939;">R$ 10,00</strong></p>
+            <button class="toggle-panel-btn" onclick="togglePanel(this, 'comboContent')"></button>
+            <div id="comboContent">
+                <h3>COMBO</h3>
+                <p class="price-highlight">R$ 1,00</p>
+                <p style="font-size: 0.7rem; color: #aaa;">1 TENTATIVAS</p>
+                <hr style="border: 0; border-top: 1px solid #333; margin: 10px 0;">
+                <p class="price-highlight">R$ 3,00</p>
+                <p style="font-size: 0.7rem; color: #aaa;">4 TENTATIVAS</p>
+                <hr style="border: 0; border-top: 1px solid #333; margin: 10px 0;">
+                <p style="font-size: 0.8rem; color: red;">PRÊMIO:</p>
+                <p class="prize-highlight"><strong style="color: #0dd939;">R$ 10,00</strong></p>
+            </div>
         </div>
     </div>
 
@@ -260,6 +291,15 @@
         <button class="close-modal" onclick="closeModals()">X</button>
         <h2 style="color: #00ff88; border-bottom: 1px solid #333; padding-bottom: 10px; margin: 0;">GANHADORES</h2>
         <div id="historyList"></div>
+    </div>
+
+    <div id="financeModal" class="modal">
+        <button class="close-modal" onclick="closeModals()">X</button>
+        <h2 style="color: #00bfff; border-bottom: 1px solid #333; padding-bottom: 10px; margin: 0;">CAIXA DIÁRIO</h2>
+        <input type="datetime-local" id="finDateTime">
+        <input type="number" id="finValue" placeholder="Valor R$" step="0.01">
+        <button onclick="saveFinance()" style="background: #00bfff;">SALVAR ARRECADAÇÃO</button>
+        <div id="financeList"></div>
     </div>
 
     <div id="adminModal" class="modal">
@@ -287,12 +327,17 @@
         const creditCount = document.getElementById('creditCount');
         const overlay = document.getElementById('overlay');
         const historyList = document.getElementById('historyList');
+        const financeList = document.getElementById('financeList');
 
         window.onload = () => {
             const savedHistory = localStorage.getItem('gameHistory');
             if (savedHistory) {
                 historyList.innerHTML = savedHistory;
                 attachDeleteEvents();
+            }
+            const savedFinance = localStorage.getItem('gameFinance');
+            if (savedFinance) {
+                financeList.innerHTML = savedFinance;
             }
             updateCredits();
         };
@@ -307,6 +352,55 @@
         function openHistory() {
             document.getElementById('historyModal').style.display = 'block';
             overlay.style.display = 'block';
+        }
+
+        function openFinance() {
+            const now = new Date();
+            const offset = now.getTimezoneOffset() * 60000;
+            const localISOTime = (new Date(now - offset)).toISOString().slice(0, 16);
+            document.getElementById('finDateTime').value = localISOTime;
+            document.getElementById('financeModal').style.display = 'block';
+            overlay.style.display = 'block';
+        }
+
+        function togglePanel(btn, contentId) {
+            const content = document.getElementById(contentId);
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                btn.style.backgroundColor = '#00ff88';
+            } else {
+                content.style.display = 'none';
+                btn.style.backgroundColor = '#ff4444';
+            }
+        }
+
+        function saveFinance() {
+            const dateTime = document.getElementById('finDateTime').value;
+            const val = document.getElementById('finValue').value || "0.00";
+            if(!dateTime) return;
+
+            const dateObj = new Date(dateTime);
+            const dataStr = dateObj.toLocaleDateString('pt-BR');
+            const horaStr = dateObj.getHours().toString().padStart(2, '0') + ":" + dateObj.getMinutes().toString().padStart(2, '0');
+
+            const itemHTML = `
+                <div class="finance-item">
+                    <div><strong>R$ ${parseFloat(val).toFixed(2)}</strong></div>
+                    <div style="text-align: right; color: #888;">${dataStr}<br><small>${horaStr}</small></div>
+                    <button class="delete-btn" onclick="deleteFinanceItem(this)">🗑️</button>
+                </div>
+            `;
+            
+            financeList.insertAdjacentHTML('afterbegin', itemHTML);
+            localStorage.setItem('gameFinance', financeList.innerHTML);
+            document.getElementById('finValue').value = "";
+        }
+
+        function deleteFinanceItem(btn) {
+            if(confirm("Excluir registro de valor?")) {
+                btn.parentElement.remove();
+                localStorage.setItem('gameFinance', financeList.innerHTML);
+            }
         }
 
         function saveCredits() {
