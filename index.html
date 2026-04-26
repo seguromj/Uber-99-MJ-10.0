@@ -3,541 +3,162 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="mobile-web-app-capable" content="yes">
-    <link rel="manifest" href="manifest.json">
-    
-    <title>Desafio 10.0 Ultra - Tablet Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dual Cam Recorder</title>
     <style>
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            margin: 0;
-            background-color: #0a0a0a;
-            color: white;
-            overflow: hidden;
-            user-select: none;
-        }
-
-        #adminBtn {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            background: none;
-            border: none;
-            font-size: 1.5rem; 
-            cursor: pointer;
-            z-index: 10;
-            filter: grayscale(1);
-        }
-
-        #historyBtn {
-            position: absolute;
-            top: 15px;
-            left: 65px;
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            z-index: 10;
-            filter: grayscale(1);
-        }
-
-        /* NOVO BOTÃO CAIXA */
-        #financeBtn {
-            position: absolute;
-            top: 15px;
-            left: 115px;
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            z-index: 10;
-            filter: hue-rotate(180deg);
-        }
-
-        #creditDisplay {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            font-family: monospace;
-            color: #888;
-            font-size: 1.1rem;
-        }
+        body { margin: 0; font-family: sans-serif; background: #1a1a1a; color: white; overflow: hidden; }
         
-        #creditCount { color: #00ff88; font-weight: bold; }
+        /* Divisão da tela */
+        .container { display: flex; flex-direction: column; height: 100vh; }
+        video { width: 100%; height: 50%; object-fit: cover; background: #000; border-bottom: 2px solid #333; }
 
-        .game-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 10px;
-            border-bottom: 2px solid #222;
-            position: relative;
-        }
-
-        h1 { margin: 0; font-size: 1.2rem; color: #007bff; text-transform: uppercase; letter-spacing: 3px; }
+        /* Ícones e Pasta */
+        .ui-overlay { position: absolute; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 20px; z-index: 10; }
+        .icon { font-size: 30px; cursor: pointer; filter: drop-shadow(0 0 5px rgba(0,0,0,0.5)); }
         
-        #display {
-            font-size: clamp(6rem, 25vw, 12rem); 
-            font-weight: 900;
-            font-family: 'Courier New', monospace;
-            color: #00ff88;
-            margin: 0;
-            line-height: 1.1;
-            font-variant-numeric: tabular-nums;
-        }
+        /* Botão de Gravar */
+        .controls { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 10; }
+        button { padding: 15px 30px; border-radius: 50px; border: none; background: #ff4444; color: white; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        button.recording { background: #222; animation: pulse 1.5s infinite; }
 
-        #btnAction {
-            width: 80%;
-            max-width: 400px; 
-            padding: 25px;
-            font-size: 1.8rem; 
-            font-weight: bold;
-            border: none;
-            border-radius: 15px;
-            background-color: #fff;
-            color: #000;
-            cursor: pointer;
-            box-shadow: 0 8px 0 #ccc;
-            touch-action: manipulation;
-            z-index: 5;
-            outline: none;
+        /* Galeria de Vídeos (Pasta) */
+        #gallery { 
+            position: fixed; top: 0; right: -100%; width: 250px; height: 100%; 
+            background: rgba(0,0,0,0.9); transition: 0.3s; padding: 20px; overflow-y: auto; z-index: 20; 
         }
+        #gallery.open { right: 0; }
+        .video-item { margin-bottom: 15px; width: 100%; border: 1px solid #444; }
         
-        #btnAction:active { transform: translateY(4px); box-shadow: 0 4px 0 #999; }
-        #btnAction:disabled { background-color: #333 !important; color: #666 !important; box-shadow: none !important; cursor: not-allowed; }
-
-        .side-panel {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            background: rgba(26, 26, 26, 0.8);
-            padding: 15px;
-            border-radius: 10px;
-            border: 1px solid #333;
-            width: 150px;
-            text-align: center;
-        }
-        .left-panel { left: 20px; }
-        .right-panel { right: 20px; }
-        .side-panel h3 { font-size: 0.8rem; color: #888; margin: 0 0 5px 0; }
-        .side-panel p { font-size: 1.1rem; font-weight: bold; margin: 0; color: #fff; }
-        .price-highlight { color: #00ff88; }
-        .prize-highlight { color: #ffcc00; }
-
-        /* ESTILO BOTÕES TOGGLE */
-        .toggle-panel-btn {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            border: none;
-            background-color: #00ff88;
-            margin-bottom: 5px;
-            cursor: pointer;
-        }
-
-        /* AJUSTE PARA TELA DEITADA (LANDSCAPE) */
-        @media (orientation: landscape) {
-            .side-panel {
-                top: auto;
-                bottom: 20px;
-                transform: none;
-                width: 180px;
-            }
-            .left-panel { left: 20px; }
-            .right-panel { right: 20px; }
-            #display { font-size: 15vh; }
-        }
-
-        #historyList, #financeList {
-            max-height: 300px;
-            overflow-y: auto;
-            margin-top: 10px;
-            text-align: left;
-        }
-
-        .history-item, .finance-item {
-            padding: 8px;
-            border-bottom: 1px solid #222;
-            font-family: monospace;
-            font-size: 0.8rem;
-            display: grid;
-            grid-template-columns: 1fr auto auto;
-            align-items: center;
-            color: #00ff88;
-            gap: 10px;
-        }
-
-        .delete-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 1.1rem;
-            padding: 5px;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            background: #1a1a1a;
-            padding: 45px 20px 20px 20px; 
-            border-radius: 15px;
-            border: 2px solid #444;
-            z-index: 1000;
-            width: 85%;
-            max-width: 350px;
-            text-align: center;
-        }
-
-        #winnerModal {
-            box-shadow: 0 0 40px rgba(0,255,136,0.25);
-        }
-
-        .modal input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #333; background: #000; color: #fff; font-size: 1.1rem; }
-        .modal button { background: #00ff88; color: #000; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1rem; margin-top: 10px; }
-        
-        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 900; }
-
-        .close-modal {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            color: #fff;
-            background: #ff4444;
-            border: none;
-            border-radius: 5px;
-            width: 30px;
-            height: 30px;
-            font-weight: bold;
-            font-size: 1rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            line-height: 1;
-            z-index: 1001;
-        }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
 </head>
-<body tabindex="0">
+<body>
 
-    <button id="adminBtn" onclick="openAdmin()">🔒</button>
-    <button id="historyBtn" onclick="openHistory()">📂</button>
-    <button id="financeBtn" onclick="openFinance()">📂</button>
-    
-    <div id="creditDisplay">TENTATIVAS: <span id="creditCount">0</span></div>
-
-    <div class="game-area">
-        <div class="side-panel left-panel">
-            <button class="toggle-panel-btn" onclick="togglePanel(this, 'avulsoContent')"></button>
-            <div id="avulsoContent">
-                <h3>AVULSO</h3>
-                <p class="price-highlight">R$ 1,00</p>
-                <p style="font-size: 0.7rem; color: #aaa;">1 TENTATIVA</p>
-                <p style="font-size: 0.8rem; color: red;">PRÊMIO:</p>
-                <p class="prize-highlight"><strong style="color: #0dd939;">VIAGEM GRÁTIS</strong></p>
-                <p style="font-size: 0.7rem;">No Valor de até R$ 10,00</p>
-                <hr style="border: 0; border-top: 1px solid #333; margin: 10px 0;">
-                <p class="price-highlight">R$ 2,00</p>
-                <p style="font-size: 0.7rem; color: #aaa;">2 TENTATIVA</p>
-                <p style="font-size: 0.8rem; color: red;">PRÊMIO:</p>
-                <p class="prize-highlight"><strong style="color: #0dd939;">VIAGEM GRÁTIS</strong></p>
-                <p style="font-size: 0.7rem;">No Valor de até R$ 20,00</p>
-            </div>
-        </div>
-
-        <h1>Tente parar no:<strong style="color: #a90dd9;"> 10.0</strong></h1>
-        <div id="display">0.0</div>
-        
-        <div id="winnerModal" class="modal" style="border-color: #00ff88;">
-            <button class="close-modal" onclick="closeModals()">X</button>
-            <h2 style="border:none; font-size: 1.5rem; color: #00ff88; margin: 0 0 10px 0;">🏆 PARABÉNS!</h2>
-            <p style="font-size: 0.9rem;">Você cravou 10.0 perfeitamente!</p>
-            <input type="text" id="userName" placeholder="Seu Nome">
-            <input type="tel" id="userPhone" placeholder="WhatsApp">
-            <input type="text" id="userPrize" placeholder="Qual o prêmio?">
-            <button onclick="saveWin()">SALVAR VITÓRIA</button>
-        </div>
-
-        <button id="btnAction">INICIAR</button>
-
-        <div class="side-panel right-panel">
-            <button class="toggle-panel-btn" onclick="togglePanel(this, 'comboContent')"></button>
-            <div id="comboContent">
-                <h3>COMBO</h3>
-                <p class="price-highlight">R$ 1,00</p>
-                <p style="font-size: 0.7rem; color: #aaa;">1 TENTATIVAS</p>
-                <hr style="border: 0; border-top: 1px solid #333; margin: 10px 0;">
-                <p class="price-highlight">R$ 3,00</p>
-                <p style="font-size: 0.7rem; color: #aaa;">4 TENTATIVAS</p>
-                <hr style="border: 0; border-top: 1px solid #333; margin: 10px 0;">
-                <p style="font-size: 0.8rem; color: red;">PRÊMIO:</p>
-                <p class="prize-highlight"><strong style="color: #0dd939;">R$ 10,00</strong></p>
-            </div>
-        </div>
+    <div class="ui-overlay">
+        <span class="icon" title="Confiança">🛡️</span>
+        <span class="icon" onclick="toggleGallery()" title="Vídeos Salvos">📂</span>
     </div>
 
-    <div id="historyModal" class="modal">
-        <button class="close-modal" onclick="closeModals()">X</button>
-        <h2 style="color: #00ff88; border-bottom: 1px solid #333; padding-bottom: 10px; margin: 0;">GANHADORES</h2>
-        <div id="historyList"></div>
+    <div class="container">
+        <video id="frontCam" autoplay playsinline muted></video>
+        <video id="backCam" autoplay playsinline muted></video>
     </div>
 
-    <div id="financeModal" class="modal">
-        <button class="close-modal" onclick="closeModals()">X</button>
-        <h2 style="color: #00bfff; border-bottom: 1px solid #333; padding-bottom: 10px; margin: 0;">CAIXA DIÁRIO</h2>
-        <input type="datetime-local" id="finDateTime">
-        <input type="number" id="finValue" placeholder="Valor R$" step="0.01">
-        <button onclick="saveFinance()" style="background: #00bfff;">SALVAR ARRECADAÇÃO</button>
-        <div id="financeList"></div>
+    <div class="controls">
+        <button id="recordBtn" onclick="toggleRecording()">INICIAR GRAVAÇÃO</button>
     </div>
 
-    <div id="adminModal" class="modal">
-        <button class="close-modal" onclick="closeModals()">X</button>
-        <h3 style="margin-top: 0;">ADICIONAR CRÉDITOS</h3>
-        <input type="number" id="newCredits" placeholder="0" inputmode="numeric">
-        <button onclick="saveCredits()">DEFINIR TENTATIVAS</button>
+    <div id="gallery">
+        <h3>Vídeos Salvos</h3>
+        <button onclick="toggleGallery()" style="background:#444; margin-bottom: 10px;">Fechar</button>
+        <div id="videoList"></div>
     </div>
-
-    <div class="overlay" id="overlay" onclick="closeModals()"></div>
 
     <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').then(reg => {
-                reg.onupdatefound = () => {
-                    const installingWorker = reg.installing;
-                    installingWorker.onstatechange = () => {
-                        if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            window.location.reload();
-                        }
-                    };
-                };
-            }).catch(err => console.log("Erro SW:", err));
-        }
+        let mediaRecorders = [];
+        let recordedChunks = [[], []];
+        let isRecording = false;
+        let intervalId;
 
-        let timer = null;
-        let count = 0.0;
-        let running = false;
-        let credits = parseInt(localStorage.getItem('gameCredits')) || 0;
-        let lockGame = false;
+        const frontVideo = document.getElementById('frontCam');
+        const backVideo = document.getElementById('backCam');
+        const recordBtn = document.getElementById('recordBtn');
+        const videoList = document.getElementById('videoList');
 
-        const display = document.getElementById('display');
-        const btnAction = document.getElementById('btnAction');
-        const creditCount = document.getElementById('creditCount');
-        const overlay = document.getElementById('overlay');
-        const historyList = document.getElementById('historyList');
-        const financeList = document.getElementById('financeList');
+        // Inicializa as câmeras
+        async function setupCameras() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(d => d.kind === 'videoinput');
 
-        window.onload = () => {
-            const savedHistory = localStorage.getItem('gameHistory');
-            if (savedHistory) {
-                historyList.innerHTML = savedHistory;
-                attachDeleteEvents();
+                // Tenta pegar a frontal (user)
+                const streamFront = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "user" } 
+                });
+                frontVideo.srcObject = streamFront;
+
+                // Tenta pegar a traseira (environment)
+                const streamBack = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: { exact: "environment" } } 
+                }).catch(() => navigator.mediaDevices.getUserMedia({ video: true })); // fallback se falhar
+                
+                backVideo.srcObject = streamBack;
+            } catch (err) {
+                alert("Erro ao acessar câmeras: " + err);
             }
-            const savedFinance = localStorage.getItem('gameFinance');
-            if (savedFinance) {
-                financeList.innerHTML = savedFinance;
-            }
-            updateCredits();
-        };
-
-        function openAdmin() {
-            document.getElementById('newCredits').value = "";
-            document.getElementById('adminModal').style.display = 'block';
-            overlay.style.display = 'block';
-            setTimeout(() => document.getElementById('newCredits').focus(), 100);
         }
 
-        function openHistory() {
-            document.getElementById('historyModal').style.display = 'block';
-            overlay.style.display = 'block';
-        }
-
-        function openFinance() {
-            const now = new Date();
-            const offset = now.getTimezoneOffset() * 60000;
-            const localISOTime = (new Date(now - offset)).toISOString().slice(0, 16);
-            document.getElementById('finDateTime').value = localISOTime;
-            document.getElementById('financeModal').style.display = 'block';
-            overlay.style.display = 'block';
-        }
-
-        function togglePanel(btn, contentId) {
-            const content = document.getElementById(contentId);
-            if (content.style.display === 'none') {
-                content.style.display = 'block';
-                btn.style.backgroundColor = '#00ff88';
+        function toggleRecording() {
+            if (isRecording) {
+                stopRecording();
             } else {
-                content.style.display = 'none';
-                btn.style.backgroundColor = '#ff4444';
+                startRecording();
             }
         }
 
-        function saveFinance() {
-            const dateTime = document.getElementById('finDateTime').value;
-            const val = document.getElementById('finValue').value || "0.00";
-            if(!dateTime) return;
-
-            const dateObj = new Date(dateTime);
-            const dataStr = dateObj.toLocaleDateString('pt-BR');
-            const horaStr = dateObj.getHours().toString().padStart(2, '0') + ":" + dateObj.getMinutes().toString().padStart(2, '0');
-
-            const itemHTML = `
-                <div class="finance-item">
-                    <div><strong>R$ ${parseFloat(val).toFixed(2)}</strong></div>
-                    <div style="text-align: right; color: #888;">${dataStr}<br><small>${horaStr}</small></div>
-                    <button class="delete-btn" onclick="deleteFinanceItem(this)">🗑️</button>
-                </div>
-            `;
+        function startRecording() {
+            isRecording = true;
+            recordBtn.innerText = "PARAR GRAVAÇÃO (1m)";
+            recordBtn.classList.add('recording');
             
-            financeList.insertAdjacentHTML('afterbegin', itemHTML);
-            localStorage.setItem('gameFinance', financeList.innerHTML);
-            document.getElementById('finValue').value = "";
+            initiateRecorders();
+
+            // Ciclo de 1 minuto (60000ms)
+            intervalId = setInterval(() => {
+                stopRecording(true); // Para e salva
+                startRecording();    // Reinicia novo bloco
+            }, 60000);
         }
 
-        function deleteFinanceItem(btn) {
-            if(confirm("Excluir registro de valor?")) {
-                btn.parentElement.remove();
-                localStorage.setItem('gameFinance', financeList.innerHTML);
-            }
-        }
+        function initiateRecorders() {
+            const streams = [frontVideo.srcObject, backVideo.srcObject];
+            mediaRecorders = [];
+            recordedChunks = [[], []];
 
-        function saveCredits() {
-            credits = parseInt(document.getElementById('newCredits').value) || 0;
-            localStorage.setItem('gameCredits', credits);
-            lockGame = false; 
-            updateCredits();
-            closeModals();
-        }
-
-        function updateCredits() {
-            creditCount.innerText = credits;
-            localStorage.setItem('gameCredits', credits);
-            btnAction.disabled = (credits <= 0 && !running) || lockGame;
-        }
-
-        function gameLoop() {
-            count += 0.1;
-            display.innerText = count.toFixed(1);
-            if (count >= 25.0) stopGame();
-        }
-
-        function startGame() {
-            if (credits <= 0 || lockGame) return;
-            credits--;
-            updateCredits();
-            
-            count = 0.0;
-            running = true;
-            btnAction.innerText = "PARAR!";
-            btnAction.style.backgroundColor = "#ff4444";
-            btnAction.style.color = "#fff";
-            timer = setInterval(gameLoop, 8); 
-        }
-
-        function stopGame() {
-            if (!running) return;
-            running = false;
-            clearInterval(timer);
-            btnAction.innerText = "INICIAR";
-            btnAction.style.backgroundColor = "#fff";
-            btnAction.style.color = "#000";
-            
-            if (count.toFixed(1) === "10.0") {
-                lockGame = true; 
-                btnAction.disabled = true;
-                setTimeout(() => {
-                    document.getElementById('winnerModal').style.display = 'block';
-                    overlay.style.display = 'block';
-                }, 3000);
-            }
-            updateCredits();
-        }
-
-        function saveWin() {
-            const name = document.getElementById('userName').value || "Mestre";
-            const phone = document.getElementById('userPhone').value || "S/N";
-            const prize = document.getElementById('userPrize').value || "Prêmio";
-            const now = new Date();
-            const dataStr = now.toLocaleDateString('pt-BR');
-            const horaStr = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
-
-            const itemHTML = `
-                <div class="history-item">
-                    <div><strong>${name}</strong><br><small>${phone}</small></div>
-                    <div style="text-align: right;"><span style="color: #ffcc00;">${prize}</span><br><small>${dataStr} - ${horaStr}</small></div>
-                    <button class="delete-btn" onclick="deleteHistoryItem(this)">🗑️</button>
-                </div>
-            `;
-            
-            historyList.insertAdjacentHTML('afterbegin', itemHTML);
-            localStorage.setItem('gameHistory', historyList.innerHTML);
-            
-            // Limpar campos
-            document.getElementById('userName').value = "";
-            document.getElementById('userPhone').value = "";
-            document.getElementById('userPrize').value = "";
-            
-            lockGame = false;
-            closeModals();
-            updateCredits();
-        }
-
-        function deleteHistoryItem(btn) {
-            if(confirm("Deseja excluir este registro?")) {
-                btn.parentElement.remove();
-                localStorage.setItem('gameHistory', historyList.innerHTML);
-            }
-        }
-
-        function attachDeleteEvents() {
-            const btns = historyList.querySelectorAll('.delete-btn');
-            btns.forEach(btn => {
-                btn.onclick = function() { deleteHistoryItem(this); };
+            streams.forEach((stream, index) => {
+                const recorder = new MediaRecorder(stream);
+                recorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) recordedChunks[index].push(e.data);
+                };
+                recorder.onstop = () => saveVideo(index);
+                recorder.start();
+                mediaRecorders.push(recorder);
             });
         }
 
-        function closeModals() {
-            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
-            overlay.style.display = 'none';
-            if (count.toFixed(1) === "10.0") {
-                lockGame = false;
-                updateCredits();
+        function stopRecording(isAutoCycle = false) {
+            if (!isAutoCycle) {
+                clearInterval(intervalId);
+                isRecording = false;
+                recordBtn.innerText = "INICIAR GRAVAÇÃO";
+                recordBtn.classList.remove('recording');
             }
+            mediaRecorders.forEach(r => r.stop());
         }
 
-        const handleInteraction = (e) => {
-            if (e.type === 'keydown') {
-                if (e.code !== 'Space' && e.keyCode !== 32) return;
-                e.preventDefault();
-            }
-
-            let anyModalOpen = Array.from(document.querySelectorAll('.modal')).some(m => m.style.display === 'block');
-            if (anyModalOpen || lockGame) return;
-
-            if (e.cancelable) e.preventDefault(); 
+        function saveVideo(index) {
+            const blob = new Blob(recordedChunks[index], { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            const name = (index === 0 ? "Frontal" : "Traseira") + " - " + new Date().toLocaleTimeString();
             
-            if (!running) {
-                if (credits > 0) startGame();
-            } else {
-                stopGame();
-            }
-        };
+            const vElement = document.createElement('video');
+            vElement.src = url;
+            vElement.className = 'video-item';
+            vElement.controls = true;
+            
+            const label = document.createElement('p');
+            label.innerText = name;
+            label.style.fontSize = "12px";
 
-        btnAction.addEventListener('mousedown', handleInteraction);
-        btnAction.addEventListener('touchstart', handleInteraction, {passive: false});
-        window.addEventListener('keydown', handleInteraction, true);
+            videoList.prepend(label);
+            videoList.prepend(vElement);
+        }
 
+        function toggleGallery() {
+            document.getElementById('gallery').classList.toggle('open');
+        }
+
+        setupCameras();
     </script>
 </body>
 </html>
