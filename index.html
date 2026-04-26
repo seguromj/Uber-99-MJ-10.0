@@ -4,55 +4,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>High Quality Rear Recorder</title>
+    <title>Privacy Recorder</title>
     <style>
-        body { margin: 0; font-family: sans-serif; background: #1a1a1a; color: white; overflow: hidden; }
+        body { margin: 0; font-family: sans-serif; background: #000; color: white; overflow: hidden; }
         
-        /* Câmera única ocupando a tela inteira */
-        .container { display: flex; height: 100vh; background: #000; }
-        video { width: 100%; height: 100%; object-fit: cover; }
+        .container { display: flex; height: 100vh; background: #000; position: relative; }
+        video { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.3s; }
+        
+        /* Modo Ninja - Tela Preta */
+        .ninja-screen { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #000; display: none; flex-direction: column; 
+            align-items: center; justify-content: center; z-index: 5; 
+        }
+        .ninja-icon { font-size: 50px; opacity: 0.3; }
 
         /* Ícones e Pasta */
         .ui-overlay { position: absolute; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 20px; z-index: 10; }
-        .icon { font-size: 30px; cursor: pointer; filter: drop-shadow(0 0 5px rgba(0,0,0,0.5)); }
+        .icon { font-size: 30px; cursor: pointer; }
         
-        /* Botão de Gravar */
-        .controls { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 10; }
-        button { padding: 15px 30px; border-radius: 50px; border: none; background: #ff4444; color: white; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        button.recording { background: #222; animation: pulse 1.5s infinite; }
+        /* Controles Principais */
+        .controls { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 10; text-align: center; }
+        button { padding: 15px 30px; border-radius: 50px; border: none; background: #ff4444; color: white; font-weight: bold; cursor: pointer; }
+        
+        /* Botão Ver (Canto Esquerdo Inferior) */
+        #viewBtn { 
+            position: absolute; bottom: 20px; left: 20px; z-index: 100; 
+            background: rgba(40, 40, 40, 0.5); padding: 10px 20px; border-radius: 5px; 
+            font-size: 14px; display: none; 
+        }
 
-        /* Galeria */
         #gallery { 
             position: fixed; top: 0; right: -100%; width: 280px; height: 100%; 
-            background: rgba(0,0,0,0.9); transition: 0.3s; padding: 20px; overflow-y: auto; z-index: 20; 
+            background: rgba(0,0,0,0.95); transition: 0.3s; padding: 20px; overflow-y: auto; z-index: 20; 
         }
         #gallery.open { right: 0; }
         .video-container { margin-bottom: 25px; border-bottom: 1px solid #444; padding-bottom: 10px; }
-        .video-item { width: 100%; border: 1px solid #444; }
-        .video-actions { display: flex; justify-content: space-around; margin-top: 8px; }
-        .action-btn { background: none; border: none; font-size: 20px; cursor: pointer; padding: 5px; }
-        
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .video-item { width: 100%; }
+        .action-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: white; }
     </style>
 </head>
 <body>
 
-    <div class="ui-overlay">
-        <span class="icon" title="Confiança">🛡️</span>
-        <span class="icon" onclick="toggleGallery()" title="Vídeos Salvos">📂</span>
+    <button id="viewBtn" onclick="toggleNinjaMode(false)">Ver Câmera</button>
+
+    <div id="ninjaOverlay" class="ninja-screen">
+        <span class="ninja-icon">🥷</span>
+    </div>
+
+    <div class="ui-overlay" id="topIcons">
+        <span class="icon" onclick="toggleNinjaMode(true)">🥷</span>
+        <span class="icon" onclick="toggleGallery()">📂</span>
     </div>
 
     <div class="container">
         <video id="rearCam" autoplay playsinline muted></video>
     </div>
 
-    <div class="controls">
+    <div class="controls" id="mainControls">
         <button id="recordBtn" onclick="toggleRecording()">INICIAR GRAVAÇÃO</button>
     </div>
 
     <div id="gallery">
         <h3>Vídeos Salvos</h3>
-        <button onclick="toggleGallery()" style="background:#444; margin-bottom: 10px; border-radius: 5px; padding: 5px 15px;">Fechar</button>
+        <button onclick="toggleGallery()" style="background:#444; margin-bottom: 10px;">Fechar</button>
         <div id="videoList"></div>
     </div>
 
@@ -65,63 +80,63 @@
         const videoElement = document.getElementById('rearCam');
         const recordBtn = document.getElementById('recordBtn');
         const videoList = document.getElementById('videoList');
+        const ninjaOverlay = document.getElementById('ninjaOverlay');
+        const viewBtn = document.getElementById('viewBtn');
+        const mainControls = document.getElementById('mainControls');
+        const topIcons = document.getElementById('topIcons');
 
         async function setupCamera() {
-            const constraints = {
-                video: {
-                    facingMode: { exact: "environment" },
-                    width: { ideal: 4096 }, // Tenta 4K
-                    height: { ideal: 2160 }
-                },
-                audio: true
-            };
-
             try {
-                // Tenta câmera traseira com alta qualidade
-                const stream = await navigator.mediaDevices.getUserMedia(constraints)
-                    .catch(() => {
-                        // Fallback caso "exact" falhe em alguns navegadores
-                        return navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: true });
-                    });
-                
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: { exact: "environment" }, width: { ideal: 1920 } }, 
+                    audio: true 
+                }).catch(() => navigator.mediaDevices.getUserMedia({ video: true, audio: true }));
                 videoElement.srcObject = stream;
-            } catch (err) {
-                alert("Erro ao acessar câmera traseira: " + err);
+            } catch (err) { alert("Erro na câmera: " + err); }
+        }
+
+        function toggleNinjaMode(activate) {
+            if (activate) {
+                ninjaOverlay.style.display = 'flex';
+                viewBtn.style.display = 'block';
+                mainControls.style.display = 'none';
+                topIcons.style.display = 'none';
+                videoElement.style.opacity = '0';
+            } else {
+                ninjaOverlay.style.display = 'none';
+                viewBtn.style.display = 'none';
+                mainControls.style.display = 'block';
+                topIcons.style.display = 'flex';
+                videoElement.style.opacity = '1';
             }
         }
 
         function toggleRecording() {
-            if (isRecording) {
-                stopRecording();
-            } else {
-                startRecording();
-            }
+            if (isRecording) { stopRecording(); } 
+            else { startRecording(); }
         }
 
         function startRecording() {
             isRecording = true;
-            recordBtn.innerText = "GRAVANDO (1m)...";
-            recordBtn.classList.add('recording');
+            recordBtn.innerText = "GRAVANDO...";
+            recordBtn.style.background = "#222";
             
             initiateRecorder();
 
+            // Ciclo de 40 segundos
             intervalId = setInterval(() => {
                 stopRecording(true);
                 startRecording();
-            }, 60000);
+            }, 40000);
         }
 
         function initiateRecorder() {
             recordedChunks = [];
             mediaRecorder = new MediaRecorder(videoElement.srcObject, {
-                mimeType: 'video/webm;codecs=vp9', // Melhor codec para qualidade/tamanho
-                videoBitsPerSecond: 5000000 // 5Mbps para boa qualidade
+                mimeType: 'video/webm;codecs=vp9',
+                videoBitsPerSecond: 5000000
             });
-
-            mediaRecorder.ondataavailable = (e) => {
-                if (e.data.size > 0) recordedChunks.push(e.data);
-            };
-            
+            mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
             mediaRecorder.onstop = saveVideo;
             mediaRecorder.start();
         }
@@ -131,68 +146,38 @@
                 clearInterval(intervalId);
                 isRecording = false;
                 recordBtn.innerText = "INICIAR GRAVAÇÃO";
-                recordBtn.classList.remove('recording');
+                recordBtn.style.background = "#ff4444";
             }
-            if (mediaRecorder && mediaRecorder.state !== "inactive") {
-                mediaRecorder.stop();
-            }
+            if (mediaRecorder && mediaRecorder.state !== "inactive") { mediaRecorder.stop(); }
         }
 
         function saveVideo() {
             if (recordedChunks.length === 0) return;
-
             const blob = new Blob(recordedChunks, { type: 'video/webm' });
             const url = URL.createObjectURL(blob);
             const timestamp = new Date().toLocaleTimeString();
-            const fileName = `HD_Rear_${timestamp}.webm`;
             
             const container = document.createElement('div');
             container.className = 'video-container';
-            
-            const vElement = document.createElement('video');
-            vElement.src = url;
-            vElement.className = 'video-item';
-            vElement.controls = true;
-            
-            const label = document.createElement('p');
-            label.innerText = `Traseira - ${timestamp}`;
-            label.style.fontSize = "12px";
-            label.style.margin = "5px 0";
-
-            const actions = document.createElement('div');
-            actions.className = 'video-actions';
-
-            const downloadBtn = document.createElement('button');
-            downloadBtn.innerHTML = "📥";
-            downloadBtn.className = "action-btn";
-            downloadBtn.onclick = () => {
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = fileName;
-                a.click();
-            };
-
-            const deleteBtn = document.createElement('button');
-            deleteBtn.innerHTML = "🗑️";
-            deleteBtn.className = "action-btn";
-            deleteBtn.onclick = () => {
-                URL.revokeObjectURL(url);
-                container.remove();
-            };
-
-            actions.appendChild(downloadBtn);
-            actions.appendChild(deleteBtn);
-
-            container.appendChild(label);
-            container.appendChild(vElement);
-            container.appendChild(actions);
-            
+            container.innerHTML = `
+                <p style="font-size:12px;">Traseira - ${timestamp}</p>
+                <video src="${url}" class="video-item" controls></video>
+                <div style="display:flex; justify-content:space-around; margin-top:5px;">
+                    <button class="action-btn" onclick="downloadVideo('${url}', '${timestamp}')">📥</button>
+                    <button class="action-btn" onclick="this.parentElement.parentElement.remove()">🗑️</button>
+                </div>
+            `;
             videoList.prepend(container);
         }
 
-        function toggleGallery() {
-            document.getElementById('gallery').classList.toggle('open');
+        function downloadVideo(url, time) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Rec_${time}.webm`;
+            a.click();
         }
+
+        function toggleGallery() { document.getElementById('gallery').classList.toggle('open'); }
 
         setupCamera();
     </script>
