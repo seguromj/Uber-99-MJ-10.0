@@ -4,13 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dual Cam Recorder</title>
+    <title>High Quality Rear Recorder</title>
     <style>
         body { margin: 0; font-family: sans-serif; background: #1a1a1a; color: white; overflow: hidden; }
         
-        /* Divisão da tela */
-        .container { display: flex; flex-direction: column; height: 100vh; }
-        video { width: 100%; height: 50%; object-fit: cover; background: #000; border-bottom: 2px solid #333; }
+        /* Câmera única ocupando a tela inteira */
+        .container { display: flex; height: 100vh; background: #000; }
+        video { width: 100%; height: 100%; object-fit: cover; }
 
         /* Ícones e Pasta */
         .ui-overlay { position: absolute; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 20px; z-index: 10; }
@@ -21,13 +21,16 @@
         button { padding: 15px 30px; border-radius: 50px; border: none; background: #ff4444; color: white; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         button.recording { background: #222; animation: pulse 1.5s infinite; }
 
-        /* Galeria de Vídeos (Pasta) */
+        /* Galeria */
         #gallery { 
-            position: fixed; top: 0; right: -100%; width: 250px; height: 100%; 
+            position: fixed; top: 0; right: -100%; width: 280px; height: 100%; 
             background: rgba(0,0,0,0.9); transition: 0.3s; padding: 20px; overflow-y: auto; z-index: 20; 
         }
         #gallery.open { right: 0; }
-        .video-item { margin-bottom: 15px; width: 100%; border: 1px solid #444; }
+        .video-container { margin-bottom: 25px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .video-item { width: 100%; border: 1px solid #444; }
+        .video-actions { display: flex; justify-content: space-around; margin-top: 8px; }
+        .action-btn { background: none; border: none; font-size: 20px; cursor: pointer; padding: 5px; }
         
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
@@ -40,8 +43,7 @@
     </div>
 
     <div class="container">
-        <video id="frontCam" autoplay playsinline muted></video>
-        <video id="backCam" autoplay playsinline muted></video>
+        <video id="rearCam" autoplay playsinline muted></video>
     </div>
 
     <div class="controls">
@@ -50,41 +52,41 @@
 
     <div id="gallery">
         <h3>Vídeos Salvos</h3>
-        <button onclick="toggleGallery()" style="background:#444; margin-bottom: 10px;">Fechar</button>
+        <button onclick="toggleGallery()" style="background:#444; margin-bottom: 10px; border-radius: 5px; padding: 5px 15px;">Fechar</button>
         <div id="videoList"></div>
     </div>
 
     <script>
-        let mediaRecorders = [];
-        let recordedChunks = [[], []];
+        let mediaRecorder;
+        let recordedChunks = [];
         let isRecording = false;
         let intervalId;
 
-        const frontVideo = document.getElementById('frontCam');
-        const backVideo = document.getElementById('backCam');
+        const videoElement = document.getElementById('rearCam');
         const recordBtn = document.getElementById('recordBtn');
         const videoList = document.getElementById('videoList');
 
-        // Inicializa as câmeras
-        async function setupCameras() {
+        async function setupCamera() {
+            const constraints = {
+                video: {
+                    facingMode: { exact: "environment" },
+                    width: { ideal: 4096 }, // Tenta 4K
+                    height: { ideal: 2160 }
+                },
+                audio: true
+            };
+
             try {
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                const videoDevices = devices.filter(d => d.kind === 'videoinput');
-
-                // Tenta pegar a frontal (user)
-                const streamFront = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: "user" } 
-                });
-                frontVideo.srcObject = streamFront;
-
-                // Tenta pegar a traseira (environment)
-                const streamBack = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: { exact: "environment" } } 
-                }).catch(() => navigator.mediaDevices.getUserMedia({ video: true })); // fallback se falhar
+                // Tenta câmera traseira com alta qualidade
+                const stream = await navigator.mediaDevices.getUserMedia(constraints)
+                    .catch(() => {
+                        // Fallback caso "exact" falhe em alguns navegadores
+                        return navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: true });
+                    });
                 
-                backVideo.srcObject = streamBack;
+                videoElement.srcObject = stream;
             } catch (err) {
-                alert("Erro ao acessar câmeras: " + err);
+                alert("Erro ao acessar câmera traseira: " + err);
             }
         }
 
@@ -98,32 +100,30 @@
 
         function startRecording() {
             isRecording = true;
-            recordBtn.innerText = "PARAR GRAVAÇÃO (1m)";
+            recordBtn.innerText = "GRAVANDO (1m)...";
             recordBtn.classList.add('recording');
             
-            initiateRecorders();
+            initiateRecorder();
 
-            // Ciclo de 1 minuto (60000ms)
             intervalId = setInterval(() => {
-                stopRecording(true); // Para e salva
-                startRecording();    // Reinicia novo bloco
+                stopRecording(true);
+                startRecording();
             }, 60000);
         }
 
-        function initiateRecorders() {
-            const streams = [frontVideo.srcObject, backVideo.srcObject];
-            mediaRecorders = [];
-            recordedChunks = [[], []];
-
-            streams.forEach((stream, index) => {
-                const recorder = new MediaRecorder(stream);
-                recorder.ondataavailable = (e) => {
-                    if (e.data.size > 0) recordedChunks[index].push(e.data);
-                };
-                recorder.onstop = () => saveVideo(index);
-                recorder.start();
-                mediaRecorders.push(recorder);
+        function initiateRecorder() {
+            recordedChunks = [];
+            mediaRecorder = new MediaRecorder(videoElement.srcObject, {
+                mimeType: 'video/webm;codecs=vp9', // Melhor codec para qualidade/tamanho
+                videoBitsPerSecond: 5000000 // 5Mbps para boa qualidade
             });
+
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) recordedChunks.push(e.data);
+            };
+            
+            mediaRecorder.onstop = saveVideo;
+            mediaRecorder.start();
         }
 
         function stopRecording(isAutoCycle = false) {
@@ -133,13 +133,21 @@
                 recordBtn.innerText = "INICIAR GRAVAÇÃO";
                 recordBtn.classList.remove('recording');
             }
-            mediaRecorders.forEach(r => r.stop());
+            if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                mediaRecorder.stop();
+            }
         }
 
-        function saveVideo(index) {
-            const blob = new Blob(recordedChunks[index], { type: 'video/webm' });
+        function saveVideo() {
+            if (recordedChunks.length === 0) return;
+
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
             const url = URL.createObjectURL(blob);
-            const name = (index === 0 ? "Frontal" : "Traseira") + " - " + new Date().toLocaleTimeString();
+            const timestamp = new Date().toLocaleTimeString();
+            const fileName = `HD_Rear_${timestamp}.webm`;
+            
+            const container = document.createElement('div');
+            container.className = 'video-container';
             
             const vElement = document.createElement('video');
             vElement.src = url;
@@ -147,18 +155,46 @@
             vElement.controls = true;
             
             const label = document.createElement('p');
-            label.innerText = name;
+            label.innerText = `Traseira - ${timestamp}`;
             label.style.fontSize = "12px";
+            label.style.margin = "5px 0";
 
-            videoList.prepend(label);
-            videoList.prepend(vElement);
+            const actions = document.createElement('div');
+            actions.className = 'video-actions';
+
+            const downloadBtn = document.createElement('button');
+            downloadBtn.innerHTML = "📥";
+            downloadBtn.className = "action-btn";
+            downloadBtn.onclick = () => {
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                a.click();
+            };
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.innerHTML = "🗑️";
+            deleteBtn.className = "action-btn";
+            deleteBtn.onclick = () => {
+                URL.revokeObjectURL(url);
+                container.remove();
+            };
+
+            actions.appendChild(downloadBtn);
+            actions.appendChild(deleteBtn);
+
+            container.appendChild(label);
+            container.appendChild(vElement);
+            container.appendChild(actions);
+            
+            videoList.prepend(container);
         }
 
         function toggleGallery() {
             document.getElementById('gallery').classList.toggle('open');
         }
 
-        setupCameras();
+        setupCamera();
     </script>
 </body>
 </html>
