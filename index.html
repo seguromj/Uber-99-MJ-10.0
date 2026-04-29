@@ -4,236 +4,536 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privacy Recorder Pro</title>
+    <title>PDV - Loja de Bolos</title>
     <style>
-        body { margin: 0; font-family: 'Courier New', Courier, monospace; background: #000; color: white; overflow: hidden; }
-        
-        .container { display: flex; height: 100vh; background: #000; position: relative; }
-        video#rearCam { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.3s; }
-        
-        /* Modo Ninja */
-        .ninja-screen { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #000; display: none; flex-direction: column; 
-            align-items: center; justify-content: center; z-index: 5; 
-        }
-        #digitalClock { font-size: 24px; color: #333; font-weight: bold; letter-spacing: 2px; }
-
-        /* Ícones */
-        .ui-overlay { position: absolute; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 20px; z-index: 10; }
-        .icon { font-size: 30px; cursor: pointer; opacity: 0.7; }
-        
-        /* Controles */
-        .controls { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 10; text-align: center; }
-        button#recordBtn { padding: 15px 30px; border-radius: 50px; border: none; background: #ff4444; color: white; font-weight: bold; cursor: pointer; }
-        
-        #viewBtn { 
-            position: absolute; bottom: 20px; left: 20px; z-index: 100; 
-            background: transparent; color: #111; border: none; font-size: 10px; display: none;
+        :root {
+            --primary: #ff85a2;
+            --secondary: #fce4ec;
+            --accent: #ff4081;
+            --dark: #333;
+            --white: #ffffff;
         }
 
-        /* Galeria */
-        #gallery { 
-            position: fixed; top: 0; right: -100%; width: 320px; height: 100%; 
-            background: rgba(0,0,0,0.98); transition: 0.3s; padding: 15px; overflow-y: auto; z-index: 20; 
-        }
-        #gallery.open { right: 0; }
-        
-        #videoList { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .video-container { background: #111; border-radius: 5px; padding: 5px; border: 1px solid #222; }
-        
-        /* Miniatura e Preview */
-        .video-thumb { width: 100%; height: 120px; border-radius: 3px; object-fit: cover; background: #000; cursor: pointer; }
-        .video-info { font-size: 9px; margin-bottom: 4px; text-align: center; color: #888; }
-        .action-btn { background: none; border: none; font-size: 16px; cursor: pointer; color: white; padding: 5px; }
+        * { box-sizing: border-box; }
 
-        /* Fullscreen Preview Overlay */
-        #videoPreviewOverlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 1000; display: none;
-            flex-direction: column; align-items: center; justify-content: center;
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background: #fdf2f5; 
+            margin: 0; 
+            padding: 15px; 
+            color: var(--dark);
         }
-        #previewVideoPlayer { width: 100%; max-height: 80vh; }
+
+        /* Controle de Horário - Responsivo */
+        .header-controls {
+            background: var(--white);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(255, 133, 162, 0.15);
+            margin-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+
+        @media (min-width: 768px) {
+            .header-controls { flex-direction: row; justify-content: space-between; }
+        }
+
+        .status-badge {
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-weight: bold;
+            color: white;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            display: inline-block;
+        }
+
+        .status-open { background: #4caf50; box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3); }
+        .status-closed { background: #f44336; box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3); }
+
+        .time-editor { 
+            display: flex; 
+            gap: 10px; 
+            align-items: center; 
+            flex-wrap: wrap; 
+            justify-content: center;
+        }
+
+        input[type="time"] { 
+            padding: 8px; 
+            border: 2px solid var(--secondary); 
+            border-radius: 8px; 
+            outline: none;
+        }
+
+        /* Botão de Adicionar (+) */
+        .add-main-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .btn-main-add {
+            background: var(--accent);
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 64, 129, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+
+        .btn-main-add:hover { transform: scale(1.1); }
+
+        /* Carrossel e Responsividade */
+        .carousel-container { margin-bottom: 35px; width: 100%; overflow: hidden; }
+        
+        .carousel-title { 
+            color: var(--dark); 
+            border-left: 6px solid var(--primary); 
+            padding-left: 15px; 
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .carousel-track {
+            display: flex;
+            overflow-x: auto;
+            gap: 15px;
+            padding: 10px 5px 20px 5px;
+            scrollbar-width: none; /* Firefox */
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .carousel-track::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+
+        .product-card {
+            min-width: 260px;
+            max-width: 260px;
+            background: var(--white);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+            text-align: center;
+            padding-bottom: 20px;
+            transition: 0.3s;
+            border: 1px solid rgba(255, 133, 162, 0.1);
+            position: relative;
+        }
+
+        @media (max-width: 480px) {
+            .product-card { min-width: 220px; }
+        }
+
+        .product-card img { width: 100%; height: 180px; object-fit: cover; }
+        .product-card h3 { font-size: 1.2rem; margin: 15px 10px 5px; }
+        .product-card .price { color: var(--accent); font-weight: 800; font-size: 1.3rem; margin-bottom: 15px; }
+        
+        /* Estilo do Texto do ID no Card */
+        .product-id-badge {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 5px;
+            display: block;
+        }
+
+        .btn-add-item {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-add-item:active { transform: scale(0.95); }
+
+        .btn-save {
+            background: var(--dark);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:active { opacity: 0.8; }
+
+        /* Estilo do ícone de edição */
+        .btn-edit-product {
+            position: absolute;
+            top: 10px;
+            right: 55px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            font-size: 18px;
+        }
+
+        /* Estilo do ícone da lixeira */
+        .btn-delete-product {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            font-size: 18px;
+            color: #f44336;
+        }
+
+        /* MODAL FULLSCREEN */
+        .modal-pdv {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--white);
+            z-index: 9999;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .modal-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .modal-form label { font-weight: bold; }
+        .modal-form input {
+            padding: 15px;
+            border: 2px solid var(--secondary);
+            border-radius: 10px;
+            font-size: 1rem;
+        }
+
+        .btn-modal-save {
+            background: var(--accent);
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+
+        .btn-modal-close {
+            background: #eee;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        /* Estilo dos Botões de Backup no Rodapé */
+        .backup-controls {
+            margin-top: 50px;
+            padding: 20px;
+            background: var(--white);
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
+        }
+
+        .btn-backup {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-export { background: #2196f3; color: white; }
+        .btn-import { background: #607d8b; color: white; }
     </style>
 </head>
 <body>
 
-    <button id="viewBtn" onclick="toggleNinjaMode(false)">.</button>
-
-    <div id="ninjaOverlay" class="ninja-screen">
-        <div id="digitalClock">00:00</div>
-    </div>
-
-    <div class="ui-overlay" id="topIcons">
-        <span class="icon" onclick="toggleNinjaMode(true)">🥷</span>
-        <span class="icon" onclick="toggleGallery()">📂</span>
-    </div>
-
-    <div class="container">
-        <video id="rearCam" autoplay playsinline muted></video>
-    </div>
-
-    <div class="controls" id="mainControls">
-        <button id="recordBtn" onclick="toggleRecording()">INICIAR GRAVAÇÃO</button>
-    </div>
-
-    <div id="gallery">
-        <h4 style="margin: 0 0 10px 0;">STORAGE (MAX 25)</h4>
-        <button onclick="toggleGallery()" style="background:#222; color: #fff; width: 100%; padding: 10px; border: none; margin-bottom: 10px;">FECHAR</button>
-        <div id="videoList"></div>
-    </div>
-
-    <div id="videoPreviewOverlay">
-        <button onclick="closePreview()" style="position:absolute; top:20px; left:20px; background:#444; color:white; border:none; padding:10px 20px; border-radius:5px;">VOLTAR</button>
-        <video id="previewVideoPlayer" controls autoplay></video>
-        <div style="margin-top: 20px;">
-            <button id="previewDownloadBtn" class="action-btn" style="font-size: 30px;">📥</button>
+    <div class="header-controls">
+        <div>
+            <span id="statusLabel" class="status-badge status-open">LOJA ABERTA</span>
+            <button onclick="toggleStatus()" style="background: none; border: 1px solid #ccc; border-radius: 5px; cursor: pointer; padding: 5px 10px; margin-left: 5px;">Mudar</button>
         </div>
+
+        <form id="timeForm" class="time-editor">
+            <div style="display:flex; align-items:center; gap:5px">
+                <label>Abre:</label>
+                <input type="time" id="openTime" name="openTime" value="08:00">
+            </div>
+            <div style="display:flex; align-items:center; gap:5px">
+                <label>Fecha:</label>
+                <input type="time" id="closeTime" name="closeTime" value="18:00">
+            </div>
+            <button type="submit" class="btn-save">Salvar</button>
+        </form>
+    </div>
+
+    <div id="modalProduto" class="modal-pdv">
+        <div class="modal-header">
+            <h2 id="modalTitle">Novo Produto</h2>
+            <button class="btn-modal-close" onclick="fecharModal()">Fechar</button>
+        </div>
+        <form class="modal-form" id="productForm">
+            
+            <label>ID do Produto:</label>
+            <input type="number" id="editId" placeholder="Ex: 2000" required>
+            
+            <label>URL da Imagem:</label>
+            <input type="text" id="imgUrl" placeholder="https://linkdaimagem.com/foto.jpg" required>
+
+            <label>Nome do Bolo:</label>
+            <input type="text" id="productName" placeholder="Ex: Bolo de Brigadeiro" required>
+
+            <label>Valor:</label>
+            <input type="text" id="productValue" placeholder="Ex: R$ 50,00" required>
+
+            <button type="submit" class="btn-modal-save">Salvar Produto na Planilha</button>
+        </form>
+    </div>
+
+    <div id="pdv-content">
+        
+        <div class="add-main-container">
+            <button class="btn-main-add" title="Adicionar novo item" onclick="abrirModalCriar()">+</button>
+        </div>
+
+        <section class="carousel-container">
+            <h2 class="carousel-title">
+              Promoções de Hoje</h2>
+          <p>Contagens dos Produtos: 2000 até 2999</p>
+            <div class="carousel-track" id="carousel1"></div>
+        </section>
+
+        <section class="carousel-container">
+            <h2 class="carousel-title">
+              Demostrações de Bolos</h2>
+          <p>Contagens dos Produtos: 100 até 199</p>
+            <div class="carousel-track" id="carousel2"></div>
+        </section>
+
+        <section class="carousel-container">
+            <h2 class="carousel-title">
+              Á pronta entrega</h2>
+          <p>Contagens dos Produtos: 200 até 299</p>
+            <div class="carousel-track" id="carousel3"></div>
+        </section>
+    </div>
+
+    <div class="backup-controls">
+        <h3>Gerenciar Dados do Site</h3>
+        <button class="btn-backup btn-export" onclick="exportarDados()">Exportar Arquivo (Backup)</button>
+        <button class="btn-backup btn-import" onclick="document.getElementById('fileInput').click()">Importar Arquivo</button>
+        <input type="file" id="fileInput" style="display:none" onchange="importarDados(event)" accept=".json">
     </div>
 
     <script>
-        let mediaRecorder;
-        let recordedChunks = [];
-        let isRecording = false;
-        let intervalId;
-        const MAX_VIDEOS = 25;
+        const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSfKSttgx2cIVEQWgD8QFiew5L0MmCJljduLSsWsmXpd3wDMPw/formResponse';
 
-        const videoElement = document.getElementById('rearCam');
-        const recordBtn = document.getElementById('recordBtn');
-        const videoList = document.getElementById('videoList');
-        const ninjaOverlay = document.getElementById('ninjaOverlay');
-        const clockElement = document.getElementById('digitalClock');
+        // Lista de produtos persistente
+        let listaProdutos = JSON.parse(localStorage.getItem('bolos_produtos')) || [
+            { id: 2000, nome: "Bolo de Chocolate", preco: "R$ 45,00", img: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400" },
+            { id: 2001, nome: "Bolo de Morango", preco: "R$ 50,00", img: "https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=400" },
+            { id: 100, nome: "Bolo de Cenoura", preco: "R$ 35,00", img: "https://images.unsplash.com/photo-1606890737304-57a1ca8a5b62?w=400" },
+            { id: 200, nome: "Red Velvet", preco: "R$ 60,00", img: "https://images.unsplash.com/photo-1586788680434-30d324671b1c?w=400" }
+        ];
 
-        // Atualiza Relógio
-        setInterval(() => {
-            const now = new Date();
-            clockElement.innerText = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        }, 1000);
+        let originalId = null;
 
-        async function setupCamera() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: { exact: "environment" }, width: { ideal: 1280 } }, 
-                    audio: { autoGainControl: true } 
-                }).catch(() => navigator.mediaDevices.getUserMedia({ video: true, audio: true }));
-                videoElement.srcObject = stream;
-            } catch (err) { alert("Erro na câmera: " + err); }
+        function salvarLocal() {
+            localStorage.setItem('bolos_produtos', JSON.stringify(listaProdutos));
         }
 
-        function toggleNinjaMode(activate) {
-            ninjaOverlay.style.display = activate ? 'flex' : 'none';
-            document.getElementById('viewBtn').style.display = activate ? 'block' : 'none';
-            document.getElementById('mainControls').style.display = activate ? 'none' : 'block';
-            document.getElementById('topIcons').style.display = activate ? 'none' : 'flex';
-            videoElement.style.opacity = activate ? '0' : '1';
-        }
-
-        function toggleRecording() {
-            isRecording ? stopRecording() : startRecording();
-        }
-
-        function startRecording() {
-            isRecording = true;
-            recordBtn.innerText = "SISTEMA ATIVO";
-            recordBtn.style.background = "#111";
-            
-            initiateRecorder();
-
-            intervalId = setInterval(() => {
-                if (mediaRecorder.state !== "inactive") {
-                    mediaRecorder.stop(); // O stop gera o vídeo e o onstop reinicia
-                }
-            }, 40000);
-        }
-
-        function initiateRecorder() {
-            recordedChunks = [];
-            // Forçar codec comum para evitar vídeos pretos
-            mediaRecorder = new MediaRecorder(videoElement.srcObject, {
-                mimeType: 'video/webm;codecs=vp8', 
-                videoBitsPerSecond: 2000000 
-            });
-            
-            mediaRecorder.ondataavailable = (e) => {
-                if (e.data.size > 0) recordedChunks.push(e.data);
-            };
-
-            mediaRecorder.onstop = () => {
-                saveVideo();
-                if (isRecording) initiateRecorder(); // Reinicia se ainda estiver no modo gravação
-            };
-
-            mediaRecorder.start();
-        }
-
-        function stopRecording() {
-            clearInterval(intervalId);
-            isRecording = false;
-            recordBtn.innerText = "INICIAR GRAVAÇÃO";
-            recordBtn.style.background = "#ff4444";
-            if (mediaRecorder && mediaRecorder.state !== "inactive") {
-                mediaRecorder.stop();
+        function toggleStatus() {
+            const label = document.getElementById('statusLabel');
+            if (label.classList.contains('status-open')) {
+                label.classList.replace('status-open', 'status-closed');
+                label.innerText = 'LOJA FECHADA';
+            } else {
+                label.classList.replace('status-closed', 'status-open');
+                label.innerText = 'LOJA ABERTA';
             }
         }
 
-        function saveVideo() {
-            if (recordedChunks.length === 0) return;
-            
-            if (videoList.children.length >= MAX_VIDEOS) {
-                const last = videoList.lastElementChild;
-                URL.revokeObjectURL(last.dataset.url);
-                last.remove();
-            }
-
-            const blob = new Blob(recordedChunks, { type: 'video/webm' });
-            const url = URL.createObjectURL(blob);
-            const now = new Date();
-            const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            const fileName = `REC_${timeStr.replace(/:/g,'-')}`;
-            
-            const container = document.createElement('div');
-            container.className = 'video-container';
-            container.dataset.url = url;
-            container.dataset.name = fileName;
-            
-            container.innerHTML = `
-                <div class="video-info">${timeStr}</div>
-                <video src="${url}" class="video-thumb" onclick="openPreview('${url}', '${fileName}')"></video>
-                <div style="display:flex; justify-content:center; gap:15px; margin-top:5px;">
-                    <button class="action-btn" onclick="downloadVideo('${url}', '${fileName}')">📥</button>
-                    <button class="action-btn" onclick="this.closest('.video-container').remove()">🗑️</button>
+        function createCardHTML(id, nome, preco, img) {
+            return `
+                <div class="product-card" id="card-prod-${id}">
+                    <button class="btn-edit-product" onclick="abrirModalEditar(${id}, '${nome}', '${preco}', '${img}')">✏️</button>
+                    <button class="btn-delete-product" onclick="excluirProduto(${id})">🗑️</button>
+                    <img src="${img}" alt="${nome}" loading="lazy">
+                    <span class="product-id-badge">ID: ${id}</span>
+                    <h3>${nome}</h3>
+                    <p class="price">${preco}</p>
+                    <button class="btn-add-item">Adicionar</button>
                 </div>
             `;
-            videoList.prepend(container);
         }
 
-        function openPreview(url, name) {
-            const overlay = document.getElementById('videoPreviewOverlay');
-            const player = document.getElementById('previewVideoPlayer');
-            const dlBtn = document.getElementById('previewDownloadBtn');
+        function renderizarTodosCarrosseis() {
+            const track1 = document.getElementById('carousel1');
+            const track2 = document.getElementById('carousel2');
+            const track3 = document.getElementById('carousel3');
+
+            track1.innerHTML = ""; track2.innerHTML = ""; track3.innerHTML = "";
+
+            listaProdutos.forEach(p => {
+                const html = createCardHTML(p.id, p.nome, p.preco, p.img);
+                if (p.id >= 2000 && p.id <= 2999) track1.innerHTML += html;
+                else if (p.id >= 100 && p.id <= 199) track2.innerHTML += html;
+                else if (p.id >= 200 && p.id <= 299) track3.innerHTML += html;
+            });
+        }
+
+        document.getElementById('timeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const abertohora = document.getElementById('openTime').value;
+            const fechadohora = document.getElementById('closeTime').value;
+            const formData = new FormData();
+            formData.append('entry.1400718616', '9000');
+            formData.append('entry.2062910271', abertohora);
+            formData.append('entry.1227214929', fechadohora);
+            formData.append('entry.263209391', 'EDITAR');
+            fetch(FORM_URL, { method: 'POST', mode: 'no-cors', body: formData }).then(() => {
+                alert('Horários de funcionamento (ID 9000) enviados com sucesso!');
+            });
+        });
+
+        function abrirModalCriar() {
+            document.getElementById('modalTitle').innerText = "Novo Produto";
+            originalId = null; 
+            document.getElementById('productForm').reset();
+            document.getElementById('modalProduto').style.display = 'block';
+        }
+
+        function abrirModalEditar(id, nome, preco, img) {
+            document.getElementById('modalTitle').innerText = "Editar Produto";
+            originalId = id; 
+            document.getElementById('editId').value = id;
+            document.getElementById('imgUrl').value = img;
+            document.getElementById('productName').value = nome;
+            document.getElementById('productValue').value = preco;
+            document.getElementById('modalProduto').style.display = 'block';
+        }
+
+        function fecharModal() {
+            document.getElementById('modalProduto').style.display = 'none';
+        }
+
+        function excluirProduto(id) {
+            if(confirm("Deseja realmente excluir o produto ID " + id + " da planilha?")) {
+                const formData = new FormData();
+                formData.append('entry.1400718616', id);
+                formData.append('entry.263209391', 'EXCLUIR');
+                fetch(FORM_URL, { method: 'POST', mode: 'no-cors', body: formData }).then(() => {
+                    alert("Solicitação de exclusão enviada!");
+                    listaProdutos = listaProdutos.filter(p => p.id !== id);
+                    salvarLocal();
+                    renderizarTodosCarrosseis();
+                });
+            }
+        }
+
+        document.getElementById('productForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('editId').value);
+            const img = document.getElementById('imgUrl').value;
+            const nome = document.getElementById('productName').value;
+            const preco = document.getElementById('productValue').value;
             
-            player.src = url;
-            dlBtn.onclick = () => downloadVideo(url, name);
-            overlay.style.display = 'flex';
+            const formData = new FormData();
+            formData.append('entry.1400718616', id);
+            formData.append('entry.2062910271', img);
+            formData.append('entry.1227214929', preco);
+            formData.append('entry.1565235387', nome);
+            formData.append('entry.263209391', originalId ? 'EDITAR' : 'CRIAR');
+
+            fetch(FORM_URL, { method: 'POST', mode: 'no-cors', body: formData }).then(() => {
+                alert("Dados enviados com sucesso!");
+                
+                if(originalId) {
+                    listaProdutos = listaProdutos.filter(p => p.id !== originalId);
+                }
+                
+                listaProdutos.push({ id, nome, preco, img });
+                salvarLocal();
+                renderizarTodosCarrosseis();
+                fecharModal();
+            });
+        });
+
+        // Funções de Exportar e Importar
+        function exportarDados() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(listaProdutos));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "backup_bolos.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
         }
 
-        function closePreview() {
-            const overlay = document.getElementById('videoPreviewOverlay');
-            const player = document.getElementById('previewVideoPlayer');
-            player.pause();
-            overlay.style.display = 'none';
+        function importarDados(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (Array.isArray(importedData)) {
+                        listaProdutos = importedData;
+                        salvarLocal();
+                        renderizarTodosCarrosseis();
+                        alert("Dados importados com sucesso!");
+                    }
+                } catch (err) {
+                    alert("Erro ao ler o arquivo!");
+                }
+            };
+            reader.readAsText(file);
         }
 
-        function downloadVideo(url, fileName) {
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${fileName}.webm`;
-            a.click();
-        }
-
-        function toggleGallery() { document.getElementById('gallery').classList.toggle('open'); }
-
-        setupCamera();
+        window.onload = () => {
+            renderizarTodosCarrosseis();
+        };
     </script>
 </body>
 </html>
